@@ -1,0 +1,8 @@
+{
+  "cspm_data_files": [
+    "examples/output/example_output_aws.ocsf.json",
+    "examples/output/example_output_azure.ocsf.json",
+    "examples/output/example_output_gcp.ocsf.json",
+    "examples/output/example_output_kubernetes.ocsf.json"
+  ]
+}

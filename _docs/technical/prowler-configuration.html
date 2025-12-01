@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Prowler Configuration&colon; A Technical Deep-Dive</title>
+            <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only],
+.vscode-high-contrast:not(.vscode-high-contrast-light) img[src$=\#gh-light-mode-only],
+.vscode-high-contrast-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+</style>
+            
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+<style>
+:root {
+  --color-note: #0969da;
+  --color-tip: #1a7f37;
+  --color-warning: #9a6700;
+  --color-severe: #bc4c00;
+  --color-caution: #d1242f;
+  --color-important: #8250df;
+}
+
+</style>
+<style>
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-note: #2f81f7;
+    --color-tip: #3fb950;
+    --color-warning: #d29922;
+    --color-severe: #db6d28;
+    --color-caution: #f85149;
+    --color-important: #a371f7;
+  }
+}
+
+</style>
+<style>
+.markdown-alert {
+  padding: 0.5rem 1rem;
+  margin-bottom: 16px;
+  color: inherit;
+  border-left: .25em solid #888;
+}
+
+.markdown-alert>:first-child {
+  margin-top: 0
+}
+
+.markdown-alert>:last-child {
+  margin-bottom: 0
+}
+
+.markdown-alert .markdown-alert-title {
+  display: flex;
+  font-weight: 500;
+  align-items: center;
+  line-height: 1
+}
+
+.markdown-alert .markdown-alert-title .octicon {
+  margin-right: 0.5rem;
+  display: inline-block;
+  overflow: visible !important;
+  vertical-align: text-bottom;
+  fill: currentColor;
+}
+
+.markdown-alert.markdown-alert-note {
+  border-left-color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-note .markdown-alert-title {
+  color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-important {
+  border-left-color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-important .markdown-alert-title {
+  color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-warning {
+  border-left-color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-warning .markdown-alert-title {
+  color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-tip {
+  border-left-color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-tip .markdown-alert-title {
+  color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-caution {
+  border-left-color: var(--color-caution);
+}
+
+.markdown-alert.markdown-alert-caution .markdown-alert-title {
+  color: var(--color-caution);
+}
+
+</style>
+        
+        </head>
+        <body class="vscode-body vscode-light">
+            <h1 id="prowler-configuration-a-technical-deep-dive">Prowler Configuration: A Technical Deep-Dive</h1>
+<p><strong>Version:</strong> 1.15.0</p>
+<p>This document provides a comprehensive technical overview of the configuration system in Prowler. It is intended for advanced users and developers who need to understand how to customize Prowler's behavior and integrate it into their own systems.</p>
+<hr>
+<h2 id="1-introduction-to-prowlers-configuration">1. Introduction to Prowler's Configuration</h2>
+<p>Prowler's configuration is managed through a set of YAML files. This design choice allows for a high degree of flexibility and enables users to define complex configurations in a human-readable format. The core of the configuration system lies in the <code>config.yaml</code> file, which acts as the main entry point for all settings.</p>
+<p>However, the system is not monolithic. It is designed to be modular, allowing users to split their configurations across multiple files and directories. This is particularly useful for large-scale deployments where managing a single, massive configuration file would be impractical.</p>
+<hr>
+<h2 id="2-the-core-configyaml-file">2. The Core <code>config.yaml</code> File</h2>
+<p>The <code>config.yaml</code> file is the heart of Prowler's configuration. It defines the providers, accounts, and other global settings that Prowler will use during its execution. Here is a breakdown of the key sections within this file.</p>
+<h3 id="example-configyaml">Example <code>config.yaml</code></h3>
+<pre><code class="language-yaml"><span class="hljs-attr">providers:</span>
+  <span class="hljs-attr">aws:</span>
+    <span class="hljs-attr">accounts:</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">id:</span> <span class="hljs-string">&quot;123456789012&quot;</span>
+        <span class="hljs-attr">role:</span> <span class="hljs-string">&quot;arn:aws:iam::123456789012:role/prowler&quot;</span>
+        <span class="hljs-attr">regions:</span>
+          <span class="hljs-bullet">-</span> <span class="hljs-string">&quot;us-east-1&quot;</span>
+          <span class="hljs-bullet">-</span> <span class="hljs-string">&quot;eu-west-1&quot;</span>
+
+<span class="hljs-attr">checks:</span>
+  <span class="hljs-bullet">-</span> <span class="hljs-string">s3_bucket_public_access</span>
+  <span class="hljs-bullet">-</span> <span class="hljs-string">ec2_instance_no_public_ip</span>
+
+<span class="hljs-attr">output:</span>
+  <span class="hljs-attr">format:</span> <span class="hljs-string">&quot;json&quot;</span>
+  <span class="hljs-attr">path:</span> <span class="hljs-string">&quot;/prowler/output&quot;</span>
+</code></pre>
+<h3 id="key-value-explanations">Key-Value Explanations</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Key</th>
+<th style="text-align:left">Type</th>
+<th style="text-align:left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>providers</code></td>
+<td style="text-align:left"><code>map</code></td>
+<td style="text-align:left">Defines the cloud providers and accounts to be scanned.</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>providers.aws</code></td>
+<td style="text-align:left"><code>map</code></td>
+<td style="text-align:left">Specifies the configuration for the AWS provider.</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>providers.aws.accounts</code></td>
+<td style="text-align:left"><code>list</code></td>
+<td style="text-align:left">A list of AWS accounts to be scanned. Each account is defined by its ID and the role to assume.</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>providers.aws.accounts.id</code></td>
+<td style="text-align:left"><code>string</code></td>
+<td style="text-align:left">The 12-digit AWS account ID.</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>providers.aws.accounts.role</code></td>
+<td style="text-align:left"><code>string</code></td>
+<td style="text-align:left">The ARN of the IAM role that Prowler should assume to perform the security assessment.</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>providers.aws.accounts.regions</code></td>
+<td style="text-align:left"><code>list</code></td>
+<td style="text-align:left">A list of regions to be scanned within the account. If not specified, all regions will be scanned.</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>checks</code></td>
+<td style="text-align:left"><code>list</code></td>
+<td style="text-align:left">A list of specific checks to be executed. If not specified, all checks will be run.</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>output</code></td>
+<td style="text-align:left"><code>map</code></td>
+<td style="text-align:left">Defines the output format and location for the scan results.</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>output.format</code></td>
+<td style="text-align:left"><code>string</code></td>
+<td style="text-align:left">The format of the output file. Supported formats include <code>json</code>, <code>csv</code>, <code>html</code>, and <code>junit</code>.</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>output.path</code></td>
+<td style="text-align:left"><code>string</code></td>
+<td style="text-align:left">The directory where the output files will be saved.</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="3-design-analysis-the-good-the-bad-and-the-ugly">3. Design Analysis: The Good, The Bad, and The Ugly</h2>
+<p>This section provides a critical analysis of Prowler's configuration system, highlighting its strengths and weaknesses.</p>
+<h3 id="the-good-pros">The Good (Pros)</h3>
+<ul>
+<li><strong>Flexibility and Expressiveness:</strong> The YAML-based configuration allows for a high degree of flexibility. Users can define complex provider and check configurations with ease.</li>
+<li><strong>Human-Readable:</strong> YAML is a human-readable format, which makes it easy for users to understand and edit the configuration files.</li>
+<li><strong>Modularity:</strong> The ability to split configurations across multiple files is a major advantage for large-scale deployments. It allows for better organization and management of the configuration.</li>
+<li><strong>Extensibility:</strong> The design makes it relatively easy to add new providers and checks without having to modify the core Prowler code.</li>
+</ul>
+<h3 id="the-bad-cons">The Bad (Cons)</h3>
+<ul>
+<li><strong>Complexity for Beginners:</strong> The sheer number of configuration options can be overwhelming for new users. The learning curve can be steep, especially for those who are not familiar with YAML or cloud security concepts.</li>
+<li><strong>Lack of Validation:</strong> The current system lacks robust validation for the configuration files. This can lead to runtime errors if the configuration is not well-formed.</li>
+<li><strong>Potential for Misconfiguration:</strong> The flexibility of the system also means that there is a higher potential for misconfiguration. A small typo in the configuration file can lead to unexpected behavior.</li>
+</ul>
+<h3 id="the-ugly-the-inelegant-parts">The Ugly (The Inelegant Parts)</h3>
+<ul>
+<li><strong>Role and Credential Management:</strong> While the configuration allows for specifying roles, the management of credentials is still a bit clunky. The system could benefit from a more streamlined way of handling authentication, perhaps by integrating with a secret management system like HashiCorp Vault.</li>
+<li><strong>Verbosity:</strong> The YAML configuration can become verbose, especially for large deployments with many accounts and regions. This can make it difficult to get a high-level overview of the configuration.</li>
+</ul>
+<hr>
+<h2 id="4-conclusion">4. Conclusion</h2>
+<p>Prowler's configuration system is a powerful and flexible tool that allows for a high degree of customization. However, it is not without its flaws. The complexity of the system can be a barrier for new users, and the lack of validation can lead to runtime errors.</p>
+<p>Despite these weaknesses, the modular and extensible design of the configuration system is a major strength. It allows Prowler to be adapted to a wide range of use cases and environments. With some improvements in the areas of validation and credential management, Prowler's configuration system could be even more robust and user-friendly.</p>
+
+            
+            
+        </body>
+        </html>
