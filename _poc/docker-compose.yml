@@ -1,3 +1,4 @@
+
 version: '3.8'
 
 services:
@@ -7,15 +8,53 @@ services:
       - "8529:8529"
     environment:
       - ARANGO_ROOT_PASSWORD=prowler
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "8529"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  localstack:
+    image: localstack/localstack:latest
+    ports:
+      - "4566:4566" # S3, and other services
+
+  create-bucket:
+    image: amazon/aws-cli
+    depends_on:
+      - localstack
+    entrypoint: >
+      sh -c "
+        until aws --endpoint-url=http://localstack:4566 s3 ls > /dev/null 2>&1; do
+          echo 'Waiting for LocalStack...';
+          sleep 2;
+        done;
+        aws --endpoint-url=http://localstack:4566 s3 mb s3://prowler-poc-bucket;
+      "
+    environment:
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_DEFAULT_REGION=us-east-1
 
   ingestor:
     build:
       context: ./ingestor
     depends_on:
-      - arangodb
+      arangodb:
+        condition: service_healthy
+      localstack: # Add dependency on Localstack
+        condition: service_started
+      create-bucket: # Make sure the bucket is created before the ingestor runs
+        condition: service_completed_successfully
+    environment:
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_DEFAULT_REGION=us-east-1
 
   engine:
     build:
       context: ./engine
     depends_on:
-      - arangodb
+      arangodb:
+        condition: service_healthy

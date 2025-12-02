@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 
 	driver "github.com/arangodb/go-driver"
 	driverhttp "github.com/arangodb/go-driver/http"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
@@ -55,8 +57,21 @@ func main() {
 		}
 	}
 
+	// Custom resolver for LocalStack
+	customResolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+		if awsEndpointURL := os.Getenv("AWS_ENDPOINT_URL"); awsEndpointURL != "" {
+			return aws.Endpoint{
+				URL:           awsEndpointURL,
+				SigningRegion: region,
+				Source:        aws.EndpointSourceCustom,
+			}, nil
+		}
+		// fallback to default resolution
+		return aws.Endpoint{}, &aws.EndpointNotFoundError{}
+	})
+
 	// Load AWS config
-	cfg, err := config.LoadDefaultConfig(context.TODO())
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithEndpointResolverWithOptions(customResolver))
 	if err != nil {
 		log.Fatalf("unable to load SDK config, %v", err)
 	}

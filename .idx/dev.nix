@@ -3,8 +3,10 @@
   # Enable the Docker daemon
   services.docker.enable = true;
 
-  # Add the docker-compose package to the environment
-  environment.systemPackages = [
+  # Add required packages
+  packages = [
     pkgs.docker-compose
+    pkgs.awscli
+    pkgs.go
   ];
 }
