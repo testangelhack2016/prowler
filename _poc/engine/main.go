@@ -1,10 +1,14 @@
-
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"net/http"
+	"os"
 	"time"
 
 	driver "github.com/arangodb/go-driver"
@@ -21,6 +25,11 @@ type CheckDoc struct {
 
 func main() {
 	fmt.Println("Starting Engine service...")
+
+	remediationServiceURL := os.Getenv("REMEDIATION_SERVICE_URL")
+	if remediationServiceURL == "" {
+		log.Println("REMEDIATION_SERVICE_URL not set. Will not call remediation service.")
+	}
 
 	// Create ArangoDB client
 	conn, err := driverhttp.NewConnection(driverhttp.ConnectionConfig{
@@ -88,6 +97,30 @@ func main() {
 				}
 				// Log the finding from the executed check
 				log.Printf("[FINDING] Check '%s': %v", check.Name, finding)
+
+				// 5. Call the remediation service
+				if remediationServiceURL != "" {
+					findingBytes, err := json.Marshal(finding)
+					if err != nil {
+						log.Printf("Failed to marshal finding to JSON: %v", err)
+						continue
+					}
+
+					resp, err := http.Post(remediationServiceURL, "application/json", bytes.NewBuffer(findingBytes))
+					if err != nil {
+						log.Printf("Failed to call remediation service: %v", err)
+						continue
+					}
+					defer resp.Body.Close()
+
+					body, err := ioutil.ReadAll(resp.Body)
+					if err != nil {
+						log.Printf("Failed to read remediation response: %v", err)
+						continue
+					}
+
+					log.Printf("[REMEDIATION] Remediation for check '%s': %s", check.Name, string(body))
+				}
 			}
 			findingsCursor.Close() // Close the cursor for the findings query
 		}

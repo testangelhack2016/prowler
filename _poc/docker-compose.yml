@@ -65,3 +65,15 @@ services:
     depends_on:
       arangodb:
         condition: service_healthy
+      remediation:
+        condition: service_started
+    environment:
+      - REMEDIATION_SERVICE_URL=http://remediation:5001
+
+  remediation:
+    build:
+      context: ./remediation
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./remediations:/app/remediations
