@@ -1,3 +1,4 @@
+
 package main
 
 import (
@@ -9,6 +10,14 @@ import (
 	driver "github.com/arangodb/go-driver"
 	driverhttp "github.com/arangodb/go-driver/http"
 )
+
+// CheckDoc defines a dynamic check for the engine to execute
+type CheckDoc struct {
+	Key         string `json:"_key"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	AQL         string `json:"aql"`
+}
 
 func main() {
 	fmt.Println("Starting Engine service...")
@@ -34,26 +43,55 @@ func main() {
 	}
 
 	for {
-		fmt.Println("Engine running... executing query.")
+		fmt.Println("Engine running... executing dynamic checks.")
 
-		// Placeholder for a query
-		query := "FOR d IN S3Bucket RETURN d"
-		cursor, err := db.Query(context.Background(), query, nil)
+		// 1. Fetch all checks from the 'Checks' collection
+		checksQuery := "FOR check IN Checks RETURN check"
+		cursor, err := db.Query(context.Background(), checksQuery, nil)
 		if err != nil {
-			log.Printf("Failed to execute query: %v", err)
-		} else {
-			defer cursor.Close()
-			for {
-				var doc interface{}
-				_, err := cursor.ReadDocument(context.Background(), &doc)
-				if driver.IsNoMoreDocuments(err) {
-					break
-				} else if err != nil {
-					log.Printf("Failed to read document: %v", err)
-				}
-				fmt.Printf("Got doc: %v\n", doc)
-			}
+			log.Printf("Failed to fetch checks: %v", err)
+			time.Sleep(10 * time.Second)
+			continue
 		}
+
+		// 2. Iterate through each check and execute its AQL query
+		for {
+			var check CheckDoc
+			_, err := cursor.ReadDocument(context.Background(), &check)
+			if driver.IsNoMoreDocuments(err) {
+				break // No more checks to process
+			}
+			if err != nil {
+				log.Printf("Failed to read check document: %v", err)
+				continue
+			}
+
+			fmt.Printf("Executing check: %s\n", check.Name)
+
+			// 3. Execute the dynamic AQL query from the check
+			findingsCursor, err := db.Query(context.Background(), check.AQL, nil)
+			if err != nil {
+				log.Printf("Failed to execute dynamic query for check '%s': %v", check.Name, err)
+				continue
+			}
+
+			// 4. Process the findings from the dynamic query
+			for {
+				var finding interface{}
+				_, err := findingsCursor.ReadDocument(context.Background(), &finding)
+				if driver.IsNoMoreDocuments(err) {
+					break // No more findings for this check
+				}
+				if err != nil {
+					log.Printf("Failed to read finding document for check '%s': %v", check.Name, err)
+					continue
+				}
+				// Log the finding from the executed check
+				log.Printf("[FINDING] Check '%s': %v", check.Name, finding)
+			}
+			findingsCursor.Close() // Close the cursor for the findings query
+		}
+		cursor.Close() // Close the cursor for the checks query
 
 		time.Sleep(10 * time.Second)
 	}

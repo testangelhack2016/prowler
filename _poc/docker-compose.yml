@@ -30,6 +30,12 @@ services:
           sleep 2;
         done;
         aws --endpoint-url=http://localstack:4566 s3 mb s3://prowler-poc-bucket;
+        aws --endpoint-url=http://localstack:4566 s3api put-bucket-acl --bucket prowler-poc-bucket --acl public-read;
+        aws --endpoint-url=http://localstack:4566 s3api put-bucket-tagging --bucket prowler-poc-bucket --tagging 'TagSet=[{Key=sensitivity,Value=high}]';
+        until aws --endpoint-url=http://localstack:4566 s3 ls s3://prowler-poc-bucket > /dev/null 2>&1; do
+          echo 'Waiting for prowler-poc-bucket to be created...';
+          sleep 2;
+        done;
       "
     environment:
       - AWS_ACCESS_KEY_ID=test
@@ -39,18 +45,19 @@ services:
   ingestor:
     build:
       context: ./ingestor
+    volumes:
+      - ./ingestor/iam_policy.json:/iam_policy.json
     depends_on:
       arangodb:
         condition: service_healthy
-      localstack: # Add dependency on Localstack
-        condition: service_started
-      create-bucket: # Make sure the bucket is created before the ingestor runs
+      create-bucket:
         condition: service_completed_successfully
     environment:
       - AWS_ENDPOINT_URL=http://localstack:4566
       - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test
       - AWS_DEFAULT_REGION=us-east-1
+      - AWS_IAM_POLICY_FILE=/iam_policy.json
 
   engine:
     build:
